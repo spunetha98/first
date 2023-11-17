@@ -39,26 +39,27 @@ app.get("/compose", function(req, res) {
     res.render("compose");
 });
 
-app.post("/compose", function(req, res) {
+app.post("/compose", async function(req, res) {
     const post = {
         content: req.body.postBody
     };
+    try {
+        const blobData = await query({ "inputs": post.content });
 
-    query(post.content).then((response) => {
-        var image = new Image();
-        image.src = URL.createObjectURL(response);
-        console.log(image.src);
-        image.width = 100;
-        image.height = 100;
-        image.alt = "here should be some image";
-        posts.push(image);
+        const bufferData = Buffer.from(await blobData.arrayBuffer());
+        const base64Data = bufferData.toString('base64');
+        const imageUrl = "data:image/png;base64," + base64Data;
 
-    });
+        const postObject = { src: imageUrl, width: 500, height: 600 };
 
-    console.log(posts.length);
-    res.redirect("/");
+        posts.push(postObject);
 
-
+        res.redirect("/");
+    } catch (error) {
+        // Handle any other errors that occurred during the API request
+        console.error("API request failed:", error);
+        res.redirect("/");
+    }
 });
 
 app.get("/posts/:postName", function(req, res) {
